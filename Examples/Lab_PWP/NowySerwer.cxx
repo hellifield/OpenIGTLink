@@ -49,138 +49,156 @@ int ReceiveCapability(igtl::Socket * socket, igtl::MessageHeader * header);
 
 int main(int argc, char* argv[])
 {
-  //------------------------------------------------------------
-  // Parse Arguments
+	//------------------------------------------------------------
+	// Parse Arguments
 
-  if (argc != 2) // check number of arguments
-    {
-    // If not correct, print usage
-    std::cerr << "Usage: " << argv[0] << " <port>"    << std::endl;
-    std::cerr << "    <port>     : Port # (18944 in Slicer default)"   << std::endl;
-    exit(0);
-    }
+	if (argc != 2) // check number of arguments
+	{
+		// If not correct, print usage
+		std::cerr << "Usage: " << argv[0] << " <port>" << std::endl;
+		std::cerr << "    <port>     : Port # (18944 in Slicer default)" << std::endl;
+		exit(0);
+	}
 
-  int    port     = atoi(argv[1]);
+	int    port = atoi(argv[1]);
 
-  igtl::ServerSocket::Pointer serverSocket;
-  serverSocket = igtl::ServerSocket::New();
-  int r = serverSocket->CreateServer(port);
+	igtl::ServerSocket::Pointer serverSocket;
+	serverSocket = igtl::ServerSocket::New();
+	int r = serverSocket->CreateServer(port);
 
-  if (r < 0)
-    {
-    std::cerr << "Cannot create a server socket." << std::endl;
-    exit(0);
-    }
+	if (r < 0)
+	{
+		std::cerr << "Cannot create a server socket." << std::endl;
+		exit(0);
+	}
 
-  igtl::Socket::Pointer socket;
-  
-  while (1)
-    {
-    //------------------------------------------------------------
-    // Waiting for Connection
-    socket = serverSocket->WaitForConnection(1000);
-    
-    if (socket.IsNotNull()) // if client connected
-      {
-      // Create a message buffer to receive header
-      igtl::MessageHeader::Pointer headerMsg;
-      headerMsg = igtl::MessageHeader::New();
+	igtl::Socket::Pointer socket;
 
-      //------------------------------------------------------------
-      // Allocate a time stamp 
-      igtl::TimeStamp::Pointer ts;
-      ts = igtl::TimeStamp::New();
+	while (1)
+	{
+		//------------------------------------------------------------
+		// Waiting for Connection
+		socket = serverSocket->WaitForConnection(1000);
 
-      //------------------------------------------------------------
-      // loop
-      for (int i = 0; i < 100; i ++)
-        {
+		if (socket.IsNotNull()) // if client connected
+		{
+			// Create a message buffer to receive header
+			igtl::MessageHeader::Pointer headerMsg;
+			headerMsg = igtl::MessageHeader::New();
 
-        // Initialize receive buffer
-        headerMsg->InitPack();
+			//------------------------------------------------------------
+			// Allocate a time stamp 
+			igtl::TimeStamp::Pointer ts;
+			ts = igtl::TimeStamp::New();
 
-        // Receive generic header from the socket
-        int r = socket->Receive(headerMsg->GetPackPointer(), headerMsg->GetPackSize());
-        if (r == 0)
-          {
-          socket->CloseSocket();
-          }
-        if (r != headerMsg->GetPackSize())
-          {
-          continue;
-          }
+			//------------------------------------------------------------
+			// loop
+			for (int i = 0; i < 100; i++)
+			{
 
-        // Deserialize the header
-        headerMsg->Unpack();
+				// Initialize receive buffer
+				headerMsg->InitPack();
 
-        // Get time stamp
-        igtlUint32 sec;
-        igtlUint32 nanosec;
-        
-        headerMsg->GetTimeStamp(ts);
-        ts->GetTimeStamp(&sec, &nanosec);
+				// Receive generic header from the socket
+				int r = socket->Receive(headerMsg->GetPackPointer(), headerMsg->GetPackSize());
+				if (r == 0)
+				{
+					socket->CloseSocket();
+				}
+				if (r != headerMsg->GetPackSize())
+				{
+					continue;
+				}
 
-        std::cerr << "Time stamp: "
-                  << sec << "." << std::setw(9) << std::setfill('0') 
-                  << nanosec << std::endl;
+				// Deserialize the header
+				headerMsg->Unpack();
 
-        // Check data type and receive data body
-        if (strcmp(headerMsg->GetDeviceType(), "TRANSFORM") == 0)
-          {
-          ReceiveTransform(socket, headerMsg);
-          }
-        else if (strcmp(headerMsg->GetDeviceType(), "POSITION") == 0)
-          {
-          ReceivePosition(socket, headerMsg);
-          }
-        else if (strcmp(headerMsg->GetDeviceType(), "IMAGE") == 0)
-          {
-          ReceiveImage(socket, headerMsg);
-          }
-        else if (strcmp(headerMsg->GetDeviceType(), "STATUS") == 0)
-          {
-          ReceiveStatus(socket, headerMsg);
-          }
+				// Get time stamp
+				igtlUint32 sec;
+				igtlUint32 nanosec;
+
+				headerMsg->GetTimeStamp(ts);
+				ts->GetTimeStamp(&sec, &nanosec);
+
+				std::cerr << "Time stamp: "
+					<< sec << "." << std::setw(9) << std::setfill('0')
+					<< nanosec << std::endl;
+
+				// Check data type and receive data body
+				if (strcmp(headerMsg->GetDeviceType(), "TRANSFORM") == 0)
+				{
+					ReceiveTransform(socket, headerMsg);
+				}
+				else if (strcmp(headerMsg->GetDeviceType(), "POSITION") == 0)
+				{
+					ReceivePosition(socket, headerMsg);
+				}
+				else if (strcmp(headerMsg->GetDeviceType(), "IMAGE") == 0)
+				{
+					ReceiveImage(socket, headerMsg);
+				}
+				else if (strcmp(headerMsg->GetDeviceType(), "STATUS") == 0)
+				{
+					ReceiveStatus(socket, headerMsg);
+				}
 #if OpenIGTLink_PROTOCOL_VERSION >= 2
-        else if (strcmp(headerMsg->GetDeviceType(), "POINT") == 0)
-          {
-          ReceivePoint(socket, headerMsg);
-          }
-        else if (strcmp(headerMsg->GetDeviceType(), "TRAJ") == 0)
-          {
-          ReceiveTrajectory(socket, headerMsg);
-          }
-        else if (strcmp(headerMsg->GetDeviceType(), "STRING") == 0)
-          {
-          ReceiveString(socket, headerMsg);
-          }
-        else if (strcmp(headerMsg->GetDeviceType(), "BIND") == 0)
-          {
-          ReceiveBind(socket, headerMsg);
-          }
-        else if (strcmp(headerMsg->GetDeviceType(), "CAPABILITY") == 0)
-          {
-          ReceiveCapability(socket, headerMsg);
-          }
+				else if (strcmp(headerMsg->GetDeviceType(), "POINT") == 0)
+				{
+					ReceivePoint(socket, headerMsg);
+					//SendPoint(socket);
+				}
+				else if (strcmp(headerMsg->GetDeviceType(), "TRAJ") == 0)
+				{
+					ReceiveTrajectory(socket, headerMsg);
+				}
+				else if (strcmp(headerMsg->GetDeviceType(), "STRING") == 0)
+				{
+					ReceiveString(socket, headerMsg);
+				}
+				else if (strcmp(headerMsg->GetDeviceType(), "BIND") == 0)
+				{
+					ReceiveBind(socket, headerMsg);
+				}
+				else if (strcmp(headerMsg->GetDeviceType(), "CAPABILITY") == 0)
+				{
+					ReceiveCapability(socket, headerMsg);
+				}
 #endif //OpenIGTLink_PROTOCOL_VERSION >= 2
-        else
-          {
-          // if the data type is unknown, skip reading.
-          std::cerr << "Receiving : " << headerMsg->GetDeviceType() << std::endl;
-          std::cerr << "Size : " << headerMsg->GetBodySizeToRead() << std::endl;
-          socket->Skip(headerMsg->GetBodySizeToRead(), 0);
-          }
-        }
-      }
-    }
-    
-  //------------------------------------------------------------
-  // Close connection (The example code never reaches to this section ...)
-  
-  socket->CloseSocket();
+				else
+				{
+					// if the data type is unknown, skip reading.
+					std::cerr << "Receiving : " << headerMsg->GetDeviceType() << std::endl;
+					std::cerr << "Size : " << headerMsg->GetBodySizeToRead() << std::endl;
+					socket->Skip(headerMsg->GetBodySizeToRead(), 0);
+				}
+			}
 
+		}
+	}
+
+	//------------------------------------------------------------
+	// Close connection (The example code never reaches to this section ...)
+
+	socket->CloseSocket();
 }
 
+void SendPoint(igtl::Socket * socket, igtl::PointElement::Pointer pointElement)
+{
+	//SEND
+	std::cerr << "Create point" << std::endl;
+	igtl::PointMessage::Pointer pointMsg;
+	pointMsg = igtl::PointMessage::New();
+	pointMsg->SetDeviceName("PointSender0");
+
+	// Pack message
+	pointMsg->AddPointElement(pointElement);
+	pointMsg->Pack();
+
+	// Send
+	std::cerr << "Send" << std::endl;
+	igtl::Sleep(100);
+	socket->Send(pointMsg->GetPackPointer(), pointMsg->GetPackSize());
+}
 
 int ReceiveTransform(igtl::Socket * socket, igtl::MessageHeader * header)
 {
@@ -366,18 +384,22 @@ int ReceivePoint(igtl::Socket * socket, igtl::MessageHeader * header)
       igtlUint8 rgba[4];
       pointElement->GetRGBA(rgba);
 
-      igtlFloat32 pos[3];
-      pointElement->GetPosition(pos);
+      igtlFloat32 x;
+	  igtlFloat32 y;
+	  igtlFloat32 z;
+	  pointElement->GetPosition(x, y, z);
+	  pointElement->SetPosition(-x, -y, -z);
 
       std::cerr << "========== Element #" << i << " ==========" << std::endl;
       std::cerr << " Name      : " << pointElement->GetName() << std::endl;
       std::cerr << " GroupName : " << pointElement->GetGroupName() << std::endl;
       std::cerr << " RGBA      : ( " << (int)rgba[0] << ", " << (int)rgba[1] << ", " << (int)rgba[2] << ", " << (int)rgba[3] << " )" << std::endl;
-      std::cerr << " Position  : ( " << std::fixed << pos[0] << ", " << pos[1] << ", " << pos[2] << " )" << std::endl;
+      std::cerr << " Position  : ( " << std::fixed << x << ", " << y << ", " << z << " )" << std::endl;
       std::cerr << " Radius    : " << std::fixed << pointElement->GetRadius() << std::endl;
       std::cerr << " Owner     : " << pointElement->GetOwner() << std::endl;
       std::cerr << "================================" << std::endl;
-      }
+	  SendPoint(socket, pointElement);
+	}
     }
 
   return 1;
