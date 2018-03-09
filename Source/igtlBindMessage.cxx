@@ -19,8 +19,8 @@
 
 #include <string.h>
 
-namespace igtl {
-
+namespace igtl   {
+  
 
 
 BindMessageBase::BindMessageBase():
