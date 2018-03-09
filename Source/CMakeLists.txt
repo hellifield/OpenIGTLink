@@ -1,7 +1,7 @@
 # Build library dependency list
 # Note: this part should be moved to OpenIGTLinkConfigPlatform.cmake
 IF(WIN32)
-  # for Windows
+  # for Windows 
   LIST(APPEND LINK_LIBS
     ws2_32
     wsock32
